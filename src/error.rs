@@ -39,26 +39,3 @@ impl fmt::Display for Error {
 		}
 	}
 }
-
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        match self {
-            Error::Io(ref err)       => err.description(),
-            Error::Json(ref err)     => err.description(),
-            Error::Template(ref err) => err.description(),
-            Error::Parse(_)          => "Service file parsing error",
-            _ => unreachable!(),
-        }
-    }
-
-    fn cause(&self) -> Option<&error::Error> {
-        match self {
-            Error::Io(ref err)       => Some(err),
-            Error::Json(ref err)     => Some(err),
-            Error::Template(ref err) => Some(err),
-            Error::Parse(_)          => None,
-            _ => unreachable!(),
-        }
-    }
-}

@@ -66,12 +66,12 @@ impl ServiceGenerator
         }
 
         let mut ctx = tera::Context::new();
-        ctx.add("service_name", &self.service_name);
-        ctx.add("classes",      &classes_map);
-        ctx.add("enumerations", &enumerations_map);
-        ctx.add("procedures",   &self.procedures);
-        ctx.add("methods",      &self.methods);
-        ctx.add("includes",     &self.includes);
+        ctx.insert("service_name", &self.service_name);
+        ctx.insert("classes",      &classes_map);
+        ctx.insert("enumerations", &enumerations_map);
+        ctx.insert("procedures",   &self.procedures);
+        ctx.insert("methods",      &self.methods);
+        ctx.insert("includes",     &self.includes);
 
         let rendered = templates.render("service.rs", &ctx).map_err(Error::Template)?;
 
@@ -97,9 +97,9 @@ impl ServiceGenerator
         }
 
         let mut ctx = tera::Context::new();
-        ctx.add("rpc_name", &proc_name);
-        ctx.add("name",     &proc_name.to_snake_case());
-        ctx.add("doc",      &doc);
+        ctx.insert("rpc_name", &proc_name);
+        ctx.insert("name",     &proc_name.to_snake_case());
+        ctx.insert("doc",      &doc);
 
         // A series of checks to identify methods.
         let mut object_name = None;
@@ -114,7 +114,7 @@ impl ServiceGenerator
                         let parts : Vec<_> = proc_name.splitn(2, '_').collect();
                         if parts.len() == 2 {
                             object_name = Some(parts[0].to_string());
-                            ctx.add("name", &parts[1].to_snake_case());
+                            ctx.insert("name", &parts[1].to_snake_case());
                         }
                     }
                 }
@@ -131,7 +131,7 @@ impl ServiceGenerator
                 }
             }
 
-            ctx.add("params", &parameters);
+            ctx.insert("params", &parameters);
         }
 
         // Return type
@@ -141,20 +141,20 @@ impl ServiceGenerator
 
             if return_type.is_object() {
                 let return_type = self.parse_type(return_type)?;
-                return_ctx.add("type", &return_type.name);
+                return_ctx.insert("type", &return_type.name);
                 if return_type.kind == TypeKind::Class {
-                    return_ctx.add("is_class", &true);
+                    return_ctx.insert("is_class", &true);
                 } else {
-                    return_ctx.add("is_class", &false);
+                    return_ctx.insert("is_class", &false);
                 }
 
             }
 
             if let json::Value::Bool(truth) = &proc_def["return_type_is_nullable"] {
-                return_ctx.add("is_nullable", &truth);
+                return_ctx.insert("is_nullable", &truth);
             }
 
-            ctx.add("return", &return_ctx);
+            ctx.insert("return", &return_ctx);
         }
 
         if let Some(impl_name) = object_name {
@@ -172,15 +172,15 @@ impl ServiceGenerator
     fn parse_param(&mut self, param: &json::Value) -> Result<tera::Context> {
         if let json::Value::String(param_name) = &param["name"] {
             let mut param_ctx = tera::Context::new();
-            param_ctx.add("name", &param_name.to_snake_case());
+            param_ctx.insert("name", &param_name.to_snake_case());
 
             let param_type = self.parse_type(&param["type"])?;
             match param_type.kind {
                 TypeKind::Primitive | TypeKind::Tuple | TypeKind::Enum => {
-                    param_ctx.add("type", &param_type.name);
+                    param_ctx.insert("type", &param_type.name);
                 }
                 _ => {
-                    param_ctx.add("type", &format!("&{}", param_type.name));
+                    param_ctx.insert("type", &format!("&{}", param_type.name));
                 }
             }
             Ok(param_ctx)
@@ -268,7 +268,7 @@ impl ServiceGenerator
                         if *service != self.service_name {
                             let scope = service.to_snake_case();
                             full_name = format!("{}::{}", scope, full_name);
-                            self.includes.insert(scope);
+                            self.includes.insert(format!("crate::{}", scope));
                         }
                     }
                     Ok(TypeDef { name: full_name, kind: TypeKind::Enum })
@@ -284,7 +284,7 @@ impl ServiceGenerator
                         if *service != self.service_name {
                             let scope = service.to_snake_case();
                             full_name = format!("{}::{}", scope, full_name);
-                            self.includes.insert(scope);
+                            self.includes.insert(format!("crate::{}", scope));
                         }
                     }
                     Ok(TypeDef { name: full_name, kind: TypeKind::Class })
