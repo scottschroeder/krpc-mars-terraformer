@@ -15,7 +15,7 @@ use std::fmt;
 {% for name, def in classes %}
 #[derive(Clone)]
 pub struct {{ name }} {
-    id: u32,
+    pub id: u32,
 }
 
 impl fmt::Debug for {{ name }} {
